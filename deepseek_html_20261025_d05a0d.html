@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>🐹 Хомяк-Кликер</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:16px;
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    background:radial-gradient(circle at 50% -10%,#31215c 0%,#161326 45%,#08070f 100%);
+    color:#fff;-webkit-tap-highlight-color:transparent;
+    overflow-x:hidden;
+  }
+  .game{
+    width:100%;max-width:440px;
+    background:rgba(255,255,255,.055);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:26px;padding:20px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 24px 70px rgba(0,0,0,.6);
+    display:flex;flex-direction:column;gap:14px;
+  }
+  h1{
+    font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+    color:rgba(255,255,255,.42);text-align:center;
+  }
+  .counter{text-align:center}
+  .money{
+    display:inline-block;font-size:44px;font-weight:800;line-height:1.1;letter-spacing:-1.5px;
+    background:linear-gradient(180deg,#ffffff 10%,#ffd75e 90%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .unit{font-size:12px;color:rgba(255,255,255,.38);letter-spacing:.14em;text-transform:uppercase;margin-top:2px}
+  .hamster-wrap{display:flex;justify-content:center;align-items:center;padding:2px 0}
+  .hamster{
+    font-size:126px;line-height:1;cursor:pointer;
+    user-select:none;-webkit-user-select:none;
+    touch-action:manipulation;display:block;
+    filter:drop-shadow(0 12px 34px rgba(255,190,60,.35));
+    transition:transform .09s ease;
+    will-change:transform;
+  }
+  .hamster:active{transform:scale(.93)}
+  .hamster.pop{animation:pop .22s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes pop{0%{transform:scale(.86)}55%{transform:scale(1.1)}100%{transform:scale(1)}}
+
+  .info{display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,.5);padding:0 6px}
+  .info b{color:#ffd75e;font-weight:700}
+
+  .shop{display:flex;flex-direction:column;gap:10px}
+  .upgrade{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:13px 15px;border-radius:16px;cursor:pointer;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.11);
+    color:#fff;font-family:inherit;text-align:left;
+    transition:background .15s,border-color .15s,transform .1s,box-shadow .15s;
+  }
+  .upgrade:hover:not(:disabled){background:rgba(255,255,255,.11);transform:translateY(-1px)}
+  .upgrade:active:not(:disabled){transform:translateY(0) scale(.99)}
+  .upgrade:disabled{opacity:.42;cursor:not-allowed}
+  .upgrade.affordable{border-color:rgba(120,255,170,.45);box-shadow:0 0 22px rgba(120,255,170,.12)}
+  .up-name{font-size:15px;font-weight:700}
+  .up-desc{font-size:12px;color:rgba(255,255,255,.45);margin-top:3px}
+  .up-cost{font-size:15px;font-weight:800;color:#ffd75e;white-space:nowrap}
+  .upgrade:disabled .up-cost{color:rgba(255,255,255,.5)}
+
+  .float{
+    position:fixed;pointer-events:none;z-index:999;
+    font-weight:800;font-size:20px;color:#ffd75e;
+    text-shadow:0 2px 10px rgba(0,0,0,.85);
+    transform:translate(-50%,-50%);
+    animation:floatUp .9s ease-out forwards;
+  }
+  @keyframes floatUp{
+    0%{opacity:1;transform:translate(-50%,-50%) scale(.75)}
+    100%{opacity:0;transform:translate(-50%,-190%) scale(1.15)}
+  }
+
+  .reset{
+    background:none;border:none;color:rgba(255,255,255,.26);
+    font-size:12px;cursor:pointer;font-family:inherit;padding:6px;
+    transition:color .15s;
+  }
+  .reset:hover{color:rgba(255,120,120,.9)}
+</style>
+</head>
+<body>
+
+<div class="game">
+  <h1>🐹 Хомяк-Кликер</h1>
+
+  <div class="counter">
+    <div class="money" id="money">0</div>
+    <div class="unit">денег</div>
+  </div>
+
+  <div class="hamster-wrap">
+    <div class="hamster" id="hamster" draggable="false">🐹</div>
+  </div>
+
+  <div class="info">
+    <span>За клик: <b id="perClick">1</b></span>
+    <span>В секунду: <b id="perSec">0</b></span>
+  </div>
+
+  <div class="shop">
+    <button class="upgrade" id="upClick">
+      <div>
+        <div class="up-name">💪 Сила клика</div>
+        <div class="up-desc" id="clickDesc">+1 за клик · ур. 0</div>
+      </div>
+      <div class="up-cost" id="clickCost">10 💰</div>
+    </button>
+
+    <button class="upgrade" id="upAuto">
+      <div>
+        <div class="up-name">🤖 Автоклик</div>
+        <div class="up-desc" id="autoDesc">+1 /сек · ур. 0</div>
+      </div>
+      <div class="up-cost" id="autoCost">25 💰</div>
+    </button>
+  </div>
+
+  <button class="reset" id="reset">Сбросить прогресс</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+
+  const SAVE_KEY = 'hamsterClicker_v1';
+  const CLICK_BASE = 10, CLICK_GROWTH = 1.15;
+  const AUTO_BASE  = 25, AUTO_GROWTH  = 1.18;
+
+  let money = 0;
+  let clickLevel = 0;
+  let autoLevel = 0;
+
+  const elMoney   = $('money');
+  const elPerClick= $('perClick');
+  const elPerSec  = $('perSec');
+  const btnClick  = $('upClick');
+  const btnAuto   = $('upAuto');
+  const costClick = $('clickCost');
+  const costAuto  = $('autoCost');
+  const descClick = $('clickDesc');
+  const descAuto  = $('autoDesc');
+  const hamster   = $('hamster');
+
+  /* ---------- формулы ---------- */
+  const clickPower = () => 1 + clickLevel;
+  const autoRate   = () => autoLevel;
+  const clickPrice = () => Math.floor(CLICK_BASE * Math.pow(CLICK_GROWTH, clickLevel));
+  const autoPrice  = () => Math.floor(AUTO_BASE  * Math.pow(AUTO_GROWTH,  autoLevel));
+
+  /* ---------- форматирование чисел ---------- */
+  function fmt(n) {
+    n = Math.floor(n);
+    if (n < 1000) return String(n);
+    const units = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx'];
+    let i = -1, x = n;
+    while (x >= 1000 && i < units.length - 1) { x /= 1000; i++; }
+    return (x < 10 ? x.toFixed(2) : x < 100 ? x.toFixed(1) : Math.floor(x)) + units[i];
+  }
+
+  /* ---------- отрисовка ---------- */
+  function render() {
+    elMoney.textContent    = fmt(money);
+    elPerClick.textContent = fmt(clickPower());
+    elPerSec.textContent   = fmt(autoRate());
+
+    const cp = clickPrice(), ap = autoPrice();
+
+    costClick.textContent = fmt(cp) + ' 💰';
+    costAuto.textContent  = fmt(ap) + ' 💰';
+    descClick.textContent = '+1 за клик · ур. ' + clickLevel;
+    descAuto.textContent  = '+1 /сек · ур. ' + autoLevel;
+
+    btnClick.disabled = money < cp;
+    btnAuto.disabled  = money < ap;
+    btnClick.classList.toggle('affordable', money >= cp);
+    btnAuto.classList.toggle('affordable',  money >= ap);
+  }
+
+  /* ---------- всплывающий текст ---------- */
+  function floatText(x, y, text) {
+    const el = document.createElement('div');
+    el.className = 'float';
+    el.textContent = text;
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 900);
+  }
+
+  /* ---------- клик по хомяку ---------- */
+  function doClick(x, y) {
+    const gain = clickPower();
+    money += gain;
+    floatText(x, y, '+' + fmt(gain));
+    hamster.classList.remove('pop');
+    void hamster.offsetWidth;
+    hamster.classList.add('pop');
+    render();
+  }
+
+  hamster.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    doClick(e.clientX, e.clientY);
+  });
+
+  /* ---------- покупка улучшений ---------- */
+  btnClick.addEventListener('click', () => {
+    const p = clickPrice();
+    if (money < p) return;
+    money -= p;
+    clickLevel++;
+    render(); save();
+  });
+
+  btnAuto.addEventListener('click', () => {
+    const p = autoPrice();
+    if (money < p) return;
+    money -= p;
+    autoLevel++;
+    render(); save();
+  });
+
+  /* ---------- сохранение ---------- */
+  function save() {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ money, clickLevel, autoLevel }));
+    } catch (e) {}
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      money      = Number(d.money)      || 0;
+      clickLevel = Number(d.clickLevel) || 0;
+      autoLevel  = Number(d.autoLevel)  || 0;
+    } catch (e) {}
+  }
+
+  /* ---------- игровой цикл ---------- */
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min((now - last) / 1000, 0.25);
+    last = now;
+    if (autoLevel > 0) money += autoRate() * dt;
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- сброс ---------- */
+  $('reset').addEventListener('click', () => {
+    if (!confirm('Точно сбросить весь прогресс?')) return;
+    money = 0; clickLevel = 0; autoLevel = 0;
+    localStorage.removeItem(SAVE_KEY);
+    render();
+  });
+
+  /* ---------- старт ---------- */
+  load();
+  render();
+  requestAnimationFrame(loop);
+
+  setInterval(save, 3000);
+  window.addEventListener('beforeunload', save);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+})();
+</script>
+</body>
+</html>
